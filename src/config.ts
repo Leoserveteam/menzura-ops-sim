@@ -125,6 +125,7 @@ export interface HouseConfig {
   };
   satisfaction: {
     start: number;
+    monthly_regression: number;
     moment_hit: number;
     moment_miss: Record<string, number>;
     foul: number;
@@ -136,6 +137,10 @@ export interface HouseConfig {
     exception_denied: number;
     exception_precedent_denied: number;
     discretion_breach_all_members: number;
+    occasion_missed: number;
+    occasion_saved: number;
+    rush_change_granted: number;
+    change_declined: number;
     recovery: Record<Variant, number>;
     renewal_illustration: { midpoint: number; steepness: number };
   };

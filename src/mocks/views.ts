@@ -35,16 +35,35 @@ export function pieceCostUsd(cfg: HouseConfig, line: string, garments = 1): numb
   return Math.round((wholesale + c.cloth_uplift_usd) * garments);
 }
 
+/**
+ * Garments per production month: pieces already planned, plus the monthly
+ * pieces not yet booked for members active or due to join (a piece made in
+ * month X is delivered in month X+1), plus Principals' further commissions.
+ */
 export function capacityForecast(ctx: SimContext) {
   const now = monthOf(ctx.now());
-  const months = [0, 1, 2, 3].map((i) => addMonths(now, i));
   const alloc = ctx.cfg.capacity.monthly_garment_allocation;
-  return months.map((month) => {
-    const g = ctx.db.scalar<number>(
+  return [0, 1, 2, 3].map((i) => addMonths(now, i)).map((month) => {
+    const booked = ctx.db.scalar<number>(
       `SELECT COALESCE(SUM(garments), 0) FROM pieces WHERE production_month = ? AND house_status != 'hold'`,
       month,
     );
-    return { month, garments: g, allocation: alloc, at_or_over: g >= alloc };
+    const delivery = addMonths(month, 1);
+    const members = ctx.db.all(`SELECT id, tier FROM members WHERE status = 'active' AND first_round_month <= ?`, delivery);
+    const haveMonthly = new Set(
+      ctx.db.all(`SELECT member_id FROM pieces WHERE kind = 'monthly' AND production_month = ?`, month).map((r) => r.member_id),
+    );
+    let expected = 0;
+    for (const m of members) {
+      if (haveMonthly.has(m.id)) continue;
+      const extras = ctx.db.get(`SELECT value FROM attio_attributes WHERE member_id = ? AND key = 'extra_commission_months'`, m.id)?.value ?? '';
+      expected += extras.split(',').includes(delivery) ? 2 : 1;
+    }
+    const pipeline = Object.entries(ctx.cfg.members.growth_base_case)
+      .filter(([m]) => m > now && m < month)
+      .reduce((s, [, n]) => s + n, 0);
+    const garments = booked + expected + pipeline;
+    return { month, booked, expected_recurring: expected + pipeline, garments, allocation: alloc, at_or_over: garments >= alloc };
   });
 }
 

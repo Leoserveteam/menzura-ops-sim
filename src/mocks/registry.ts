@@ -69,7 +69,7 @@ const defs: ToolDef[] = [
       const id = ctx.db.nextId('OUT');
       ctx.db.insert('outbox', {
         id, created_at: ctx.now(), by_agent: actor, to_addr: a.to, member_id: a.member_id, round_id: a.round_id,
-        piece_id: a.piece_id, kind: a.kind, subject: a.subject, body: a.body,
+        piece_id: a.piece_id, kind: a.kind, subject: a.subject, body: a.body, reply_to: a.reply_to,
         guard_issues: issues.length ? issues : undefined,
       });
       if (a.reply_to) ctx.db.run('UPDATE inbox SET handled_at = ? WHERE id = ? AND handled_at IS NULL', ctx.now(), a.reply_to);

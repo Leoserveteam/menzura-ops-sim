@@ -34,13 +34,14 @@ CREATE TABLE IF NOT EXISTS pieces (
   fitting_booked_at INTEGER, fitting_at INTEGER, fit_attempts INTEGER NOT NULL DEFAULT 0,
   fit_ok_at INTEGER, alteration_booked_at INTEGER, alteration_at INTEGER, fit_failed_at INTEGER,
   occasion TEXT, occasion_at INTEGER, express INTEGER NOT NULL DEFAULT 0, cost_usd REAL NOT NULL DEFAULT 0,
-  production_month TEXT
+  production_month TEXT, script TEXT NOT NULL DEFAULT '{}'
 );
 CREATE TABLE IF NOT EXISTS outbox (
   id TEXT PRIMARY KEY, created_at INTEGER NOT NULL, by_agent TEXT NOT NULL,
   to_addr TEXT NOT NULL, member_id TEXT, round_id TEXT, piece_id TEXT, kind TEXT NOT NULL,
   subject TEXT NOT NULL, body TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'awaiting_human',
-  reviewed_by TEXT, review_note TEXT, sent_by TEXT, sent_at INTEGER, guard_issues TEXT
+  reviewed_by TEXT, review_note TEXT, sent_by TEXT, sent_at INTEGER, guard_issues TEXT,
+  reply_to TEXT, meta TEXT, delivered INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS inbox (
   id TEXT PRIMARY KEY, received_at INTEGER NOT NULL, from_addr TEXT NOT NULL, member_id TEXT,

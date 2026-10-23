@@ -262,17 +262,24 @@ members:
 
 satisfaction:
   start: 72
-  moment_hit: 0.4
+  # Each month satisfaction drifts this share of the way back toward start,
+  # so it reflects recent experience rather than piling up.
+  monthly_regression: 0.15
+  moment_hit: 0.15
   moment_miss: { 1: -2, 2: -1, 3: -1.5, 4: -4, 5: -3, 6: -0.5, 7: 0 }
   foul: -8
-  gesture: 4
+  gesture: 3
   selling_tone: -3
   personal_call_on_time: 2
-  dinner_attended: 1.5
+  dinner_attended: 1
   exception_granted: 2
   exception_denied: -3
   exception_precedent_denied: -5
   discretion_breach_all_members: -2
+  occasion_missed: -15
+  occasion_saved: 3
+  rush_change_granted: 2
+  change_declined: -2
   recovery: { A: 3, B: 6 }
   # Illustrative only: maps satisfaction to a renewal propensity. Not a forecast.
   renewal_illustration: { midpoint: 60, steepness: 0.12 }
@@ -297,7 +304,7 @@ scripted_events:
   - { id: assistant_taste_question,  at: "2027-03-10T11:20", member: M01 }
   - { id: same_exception_first,      at: "2027-03-01T10:00", member: M03, dinner: "2027-03-18" }
   - { id: saturday_night_disappointment, at: "2027-04-17T22:30", member: M02 }
-  - { id: family_commission_enquiry, at: "2027-04-20T16:00", member: M05, garments: 44, for_month: "2027-07", occasion: "2027-08-21" }
+  - { id: family_commission_enquiry, at: "2027-04-20T16:00", member: M05, garments: 50, for_month: "2027-07", occasion: "2027-08-21" }
   - { id: applicant_with_following,  at: "2027-05-03T09:30" }
   - { id: fit_fails_twice,           round_month: "2027-05", member: M04 }
   - { id: workshop_missed_update,    at: "2027-05-10" }
