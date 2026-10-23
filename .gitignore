@@ -1,0 +1,9 @@
+node_modules/
+runs/
+cache/
+*.db
+*.db-*
+.env
+.env.*
+# Local, never-committed list of real names the content guard must catch (see README).
+privacy-denylist.local.txt

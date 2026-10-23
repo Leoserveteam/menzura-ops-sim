@@ -1,0 +1,345 @@
+# Menzura operations simulation: the one config file.
+# Every money figure, rule parameter, policy and behaviour profile lives here.
+# Figures marked "assumption" were not given in the brief; change them freely.
+
+sim:
+  seed: 2027
+  # Proposals for January go out in December, so the clock starts in a short,
+  # unscored prologue. Only rounds for Jan–Dec 2027 are scored.
+  prologue_start: 2026-12-01
+  scored_start: 2027-01-01
+  end: 2027-12-31
+
+models:
+  house: claude-sonnet-5-5        # the seven house agents
+  people: claude-haiku-5-5        # simulated members and humans
+  house_effort: medium
+  people_effort: low
+  # USD per million tokens. Used for the --budget meter on Haiku calls; the
+  # Agent SDK reports its own cost for Sonnet calls.
+  pricing_usd_per_mtok:
+    claude-sonnet-5-5: { input: 2.00, output: 10.00, cache_read: 0.20, cache_write: 2.50 }
+    claude-haiku-5-5: { input: 0.10, output: 0.50, cache_read: 0.01, cache_write: 0.125 }
+
+limits:
+  agent_call_max_tokens: 20000     # hard cap on any single agent call's context
+  people_prompt_max_tokens: 100000 # hard cap on any Haiku prompt
+  agent_max_turns: 8
+  people_max_output_tokens: 400
+  agent_record_lines_in_context: 6
+
+membership:
+  tiers:
+    member:    { fee_usd: 24000, pieces: 12, contribution_usd: 15000, portrait_session_usd: 600 }
+    principal: { fee_usd: 50000, pieces: 15, contribution_usd: 34800, portrait_session_usd: 1000 }
+  lines: [boardroom, heritage]
+
+costs:
+  fx: { CAD_per_USD: 1.37, NGN_per_USD: 1550 }   # fixed sim rates, not market data
+  boardroom_suit_wholesale_cad: 400
+  heritage_agbada_wholesale_ngn: 600000
+  cloth_uplift_usd: 300
+  portrait_usage_rate: 0.35
+  occasion_guarantee_usd_per_member_year: 300
+  occasion_guarantee_express_usd: 900     # assumption: one express rescue
+  alteration_usd: 150                     # assumption: one alteration at house cost
+  extra_dinner_guest_usd: 250             # assumption
+  local_alteration_rush_usd: 400          # assumption: rush change to a finished piece
+  promotional_piece_usd: 1500             # assumption: applicant policy A
+
+capacity:
+  monthly_garment_allocation: 60
+  warn_days_ahead: 60
+
+# The rules adopted in the tabletop test, as parameters.
+rules:
+  status_note_on_production: true
+  status_note_on_ship: true
+  status_note_within_days: 3
+  plan_months_ahead: 1
+  production_days: { boardroom: 21, heritage: 24 }
+  shipping_days: 5
+  booking_cutoff_buffer_days: 2
+  desk_proposal_lead_days: 2
+  silence_call_days: 7
+  silence_hold_days: 14
+  pause_max_months_per_year: 3
+  answer_record_within_days: 2
+  alteration_book_within_days: 7
+  portrait_offer_within_days: 7
+  personal_call_within_hours: 24
+  urgent_flag_within_hours: 2
+  record_line_grace_days: 3
+  round_close_days_after_month: 7
+  dinner_guest_allowance: 1
+  exceptions_decided_by: nick
+  # Situations that have a written rule. When anything else happens, whoever
+  # handles it is improvising, and the sim logs a rule gap.
+  covered_situations:
+    - silence
+    - late_piece
+    - failed_fit
+    - disappointment
+    - occasion_guarantee
+    - dinner_exception_request
+
+agents:
+  desk:
+    name: The Desk
+    does: Drafts all member and assistant messages; books fittings and portrait sessions
+    tools: [gmail, calendar]
+    ceiling: draft
+    veto: stylist
+  record:
+    name: The Record
+    does: Keeps preferences, occasions, history; files portraits; surfaces prompts for the seasonal gesture
+    tools: [attio, drive]
+    ceiling: alone
+    veto: stylist
+  workroom:
+    name: The Workroom
+    does: One record per piece from cloth to door; reads workshop updates; flags lateness; warns 60 days before the monthly allocation is reached
+    tools: [airtable]
+    ceiling: alone
+    veto: operator
+  table:
+    name: The Table
+    does: Quarterly dinners, December evening, hosting under the house, occasion guarantee timelines
+    tools: [calendar, gmail]
+    ceiling: signoff
+    veto: operator
+  door:
+    name: The Door
+    does: Reads applications, writes a one-page applicant brief, drafts the membership agreement once admitted
+    tools: [attio, docusign]
+    ceiling: draft
+    veto: nick
+  counting_house:
+    name: The Counting House
+    does: Fees, books, monthly results against the model, investor pipeline, cap table
+    tools: [stripe, xero, carta, docusign, attio]
+    ceiling: signoff
+    veto: nick
+  referee:
+    name: The Referee
+    does: Scores every round, publishes the weekly scoreboard; cannot change rules or its own score
+    tools: [airtable]
+    ceiling: alone
+    veto: nick
+    # Default agreed in the plan: the Referee's read-only lane is its permanent
+    # level, so scoring never waits on Nick. Set to draft to gate it instead.
+    start: alone
+
+levels:
+  order: [draft, signoff, alone]
+  start: draft
+  promote_after_clean_season: 1
+  demote_per_foul: 1
+
+humans:
+  # Times are house local. Weekend urgent delay is how long an urgent flag
+  # raised outside working time waits before this person acts on it.
+  stylist:
+    work_days: [1, 2, 3, 4, 5]
+    sessions: ["09:00", "13:00", "17:00"]
+    weekend_urgent_delay_hours: 14
+    evening_urgent_delay_hours: 11
+    approve_rate: 0.94
+    catch_rate: 0.8
+  operator:
+    work_days: [1, 2, 3, 4, 5]
+    sessions: ["09:00", "15:00"]
+    weekend_urgent_delay_hours: 30
+    evening_urgent_delay_hours: 14
+    approve_rate: 0.96
+    catch_rate: 0.7
+  nick:
+    work_days: [1, 2, 3, 4, 5, 6]
+    sessions: ["08:00", "18:00"]
+    weekend_urgent_delay_hours: 6
+    evening_urgent_delay_hours: 3
+    approve_rate: 0.95
+    catch_rate: 0.85
+  minutes:
+    review_draft: 3
+    send_message: 1
+    approve_action: 2
+    reject_and_fix: 10
+    personal_call: 15
+    silence_call: 10
+    curate_proposal: 20
+    swap_alternative: 15
+    fitting: 45
+    alteration_fitting: 30
+    choose_gesture: 15
+    deliver_gesture: 20
+    review_foul: 30
+    decide_exception: 10
+    applicant_decision: 20
+    send_agreement: 5
+    capacity_decision: 30
+    occasion_rescue: 25
+    improvise: 15
+    manual_fix: 10
+    dinner_hosting: 180
+    answer_question: 6
+
+members:
+  profiles:
+    assistant_only:
+      label: Speaks only through his assistant
+      via_assistant: true
+      reply_median_hours: 20
+      answer: { approve: 0.8, swap: 0.12, hold: 0.08 }
+      patience_hours: 72
+      chase_after_late_days: 2
+      fit_ok: 0.88
+      question_rate: 0.45
+      selling_sensitivity: 1.0
+    slow_traveller:
+      label: Slow to reply and travels
+      via_assistant: false
+      reply_median_hours: 80
+      answer: { approve: 0.72, swap: 0.12, hold: 0.16 }
+      patience_hours: 120
+      chase_after_late_days: 5
+      fit_ok: 0.86
+      question_rate: 0.25
+      selling_sensitivity: 0.8
+    exacting:
+      label: Exacting, with tight deadlines
+      via_assistant: false
+      reply_median_hours: 5
+      answer: { approve: 0.7, swap: 0.25, hold: 0.05 }
+      patience_hours: 24
+      chase_after_late_days: 0
+      fit_ok: 0.78
+      question_rate: 0.7
+      selling_sensitivity: 1.5
+    new_polite_brief:
+      label: New, polite but brief
+      via_assistant: false
+      reply_median_hours: 28
+      answer: { approve: 0.85, swap: 0.1, hold: 0.05 }
+      patience_hours: 96
+      chase_after_late_days: 3
+      fit_ok: 0.85
+      question_rate: 0.3
+      selling_sensitivity: 1.2
+    principal_family_abroad:
+      label: Principal with a major family occasion abroad
+      via_assistant: false
+      reply_median_hours: 14
+      answer: { approve: 0.8, swap: 0.15, hold: 0.05 }
+      patience_hours: 48
+      chase_after_late_days: 1
+      fit_ok: 0.85
+      question_rate: 0.5
+      selling_sensitivity: 1.3
+  initial:
+    - { id: M01, name: "SIM-Adewale Coker",   tier: member,    line: boardroom, profile: assistant_only,          proposal_day: 6,  delivery_day: 18 }
+    - { id: M02, name: "SIM-Kwame Asante-Lord", tier: member,  line: heritage,  profile: slow_traveller,          proposal_day: 8,  delivery_day: 20 }
+    - { id: M03, name: "SIM-Daniel Okafor",   tier: principal, line: boardroom, profile: exacting,                proposal_day: 5,  delivery_day: 14 }
+    - { id: M04, name: "SIM-Tunde Bakare",    tier: member,    line: boardroom, profile: new_polite_brief,        proposal_day: 9,  delivery_day: 19 }
+    - { id: M05, name: "SIM-Chief Emeka Obi", tier: principal, line: heritage,  profile: principal_family_abroad, proposal_day: 7,  delivery_day: 16 }
+  # Base case: 5 at the start, about 17 by year end. Month → new members admitted.
+  growth_base_case:
+    "2027-02": 1
+    "2027-03": 1
+    "2027-04": 1
+    "2027-05": 1
+    "2027-06": 1
+    "2027-07": 1
+    "2027-08": 1
+    "2027-09": 2
+    "2027-10": 1
+    "2027-11": 1
+    "2027-12": 1
+  new_member_mix:
+    principal_share: 0.3
+    heritage_share: 0.45
+    profiles: [assistant_only, slow_traveller, exacting, new_polite_brief, new_polite_brief]
+
+satisfaction:
+  start: 72
+  moment_hit: 0.4
+  moment_miss: { 1: -2, 2: -1, 3: -1.5, 4: -4, 5: -3, 6: -0.5, 7: 0 }
+  foul: -8
+  gesture: 4
+  selling_tone: -3
+  personal_call_on_time: 2
+  dinner_attended: 1.5
+  exception_granted: 2
+  exception_denied: -3
+  exception_precedent_denied: -5
+  discretion_breach_all_members: -2
+  recovery: { A: 3, B: 6 }
+  # Illustrative only: maps satisfaction to a renewal propensity. Not a forecast.
+  renewal_illustration: { midpoint: 60, steepness: 0.12 }
+
+# Policy comparisons. Defaults below are the baseline; --policy overrides.
+policies:
+  recovery:
+    default: A
+    A: One free month
+    B: Fit commitment at the house's cost, personal call within a day, seasonal gesture brought forward
+  applicant_following:
+    default: A
+    A: Admit with a promotional piece
+    B: Admit on standard terms, with the privacy promise covering what he posts
+  exceptions:
+    default: A
+    A: Granted case by case
+    B: Never granted
+
+# Scripted stress cases. All must fire in a full-year run.
+scripted_events:
+  - { id: assistant_taste_question,  at: "2027-03-10T11:20", member: M01 }
+  - { id: same_exception_first,      at: "2027-03-01T10:00", member: M03, dinner: "2027-03-18" }
+  - { id: saturday_night_disappointment, at: "2027-04-17T22:30", member: M02 }
+  - { id: family_commission_enquiry, at: "2027-04-20T16:00", member: M05, garments: 44, for_month: "2027-07", occasion: "2027-08-21" }
+  - { id: applicant_with_following,  at: "2027-05-03T09:30" }
+  - { id: fit_fails_twice,           round_month: "2027-05", member: M04 }
+  - { id: workshop_missed_update,    at: "2027-05-10" }
+  - { id: same_exception_second,     at: "2027-06-01T10:00", member: M01, dinner: "2027-06-17" }
+  - { id: late_before_wedding,       round_month: "2027-06", member: M03, wedding: "2027-06-19", delay_days: 9 }
+  - { id: allocation_month_7,        month: "2027-07" }
+  - { id: silent_six_weeks,          from: "2027-08-02", to: "2027-09-13", member: M02 }
+  - { id: change_finished_piece,     at: "2027-10-20T08:45", member: M04, event: "2027-10-23" }
+
+random_events:
+  workshop_start_delay: { p: 0.08, days: [1, 6] }
+  production_overrun:   { p: 0.10, days: [2, 7] }
+  shipping_delay:       { p: 0.07, days: [1, 4] }
+  damaged_on_arrival:   { p: 0.02 }
+  cloth_unavailable:    { p: 0.04 }
+  occasion_mentioned:   { p: 0.12 }
+  extra_application:    { p_per_month: 0.5 }
+  # Applicant B: chance per month that a member with a following posts something touching the house
+  following_post_breach: { p_per_month: 0.08 }
+  # Applicant A: chance the promotional piece exposes another member
+  promo_exposes_member: { p: 0.35 }
+
+dinners:
+  events:
+    - { id: q1_dinner, date: "2027-03-18" }
+    - { id: q2_dinner, date: "2027-06-17" }
+    - { id: q3_dinner, date: "2027-09-16" }
+    - { id: december_evening, date: "2027-12-09" }
+  plan_days_ahead: 30
+  attend_rate: 0.7
+
+# Offline stand-ins (no model calls). These exist to test the engine for free;
+# their mistakes are seeded, not real agent behaviour.
+offline:
+  mistake_rate: 0.04
+  overreach_rate: 0.03
+  urgent_miss_rate: 0.15
+  taste_answer_rate: 0.3
+
+privacy:
+  # Real names the content guard must catch are never committed. Put them, one
+  # per line, in privacy-denylist.local.txt (gitignored) or point
+  # SIM_DENYLIST_FILE at another file.
+  denylist_file: privacy-denylist.local.txt
+  member_domain: example.invalid   # reserved TLD: can never route

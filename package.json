@@ -1,0 +1,32 @@
+{
+  "name": "menzura-ops-sim",
+  "version": "0.1.0",
+  "description": "Closed simulation of the Menzura operation. Nothing real: mock tools, fictional SIM- members.",
+  "scripts": {
+    "sim": "node --no-warnings=ExperimentalWarning --import tsx src/cli.ts",
+    "test": "node --no-warnings=ExperimentalWarning --import tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Leoserveteam/menzura-ops-sim.git"
+  },
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/Leoserveteam/menzura-ops-sim/issues"
+  },
+  "homepage": "https://github.com/Leoserveteam/menzura-ops-sim#readme",
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.309",
+    "@anthropic-ai/sdk": "^1.1.0",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "private": true,
+  "type": "module"
+}
